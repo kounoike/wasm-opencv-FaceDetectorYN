@@ -42,7 +42,7 @@ int detectFace(int width, int height) {
   if (width == 0 || height == 0) {
     return -1;
   }
-  fmt::print("detectFace {}x{}\n", width, height);
+  // fmt::print("detectFace {}x{}\n", width, height);
   if (currentWidth != width || currentHeight != height) {
     fmt::print("setInputSize {}x{}\n", width, height);
     faceDetector->setInputSize(cv::Size(width, height));
