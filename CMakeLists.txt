@@ -10,7 +10,7 @@ if(CMAKE_CROSSCOMPILING)
   file(GLOB opencv_3rdparty_simd "/opencv/build_wasm_simd/install/lib/opencv4/3rdparty/*.a")
   file(GLOB opencv_core_simd_thread "/opencv/build_wasm_simd_threads/install/lib/*.a")
   file(GLOB opencv_3rdparty_simd_thread "/opencv/build_wasm_simd_threads/install/lib/opencv4/3rdparty/*.a")
-  else()
+else()
   find_package(OpenCV REQUIRED)
 endif()
 
@@ -137,7 +137,7 @@ if(CMAKE_CROSSCOMPILING)
     "SHELL:--embed-file yunet.onnx@/yunet.onnx"
     "SHELL:-s ALLOW_MEMORY_GROWTH=1"
     # "SHELL:-s USE_PTHREADS=1 -s PTHREAD_POOL_SIZE=16 -s PROXY_TO_PTHREAD"
-    "SHELL:-s USE_PTHREADS=1 -s PTHREAD_POOL_SIZE=16"
+    "SHELL:-s USE_PTHREADS=1 -s PTHREAD_POOL_SIZE=navigator.hardwareConcurrency/2 -Wno-pthreads-mem-growth"
     "SHELL:-s TOTAL_MEMORY=65536000"
   )
 
