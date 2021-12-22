@@ -40,11 +40,19 @@ RUN apt-get update -y \
   && rm -rf /var/lib/apt/lists/*
 
 
-RUN curl -O https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
-  dpkg -i google-chrome-stable_current_amd64.deb && \
-  rm google-chrome-stable_current_amd64.deb
+# RUN curl -O https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
+#   dpkg -i google-chrome-stable_current_amd64.deb && \
+#   rm google-chrome-stable_current_amd64.deb
 
-ARG EMSCRIPTEN_VERSION=3.0.0
+RUN curl -sSL https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+  echo "deb http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google.list && \
+  apt-get update -y && \
+  apt-get install -y --no-install-recommends \
+  google-chrome-stable \
+  google-chrome-beta \
+  google-chrome-unstable
+
+ARG EMSCRIPTEN_VERSION=3.0.1
 # ### EMSCRIPTEN for base
 WORKDIR /
 RUN git clone https://github.com/emscripten-core/emsdk.git --depth 1
