@@ -40,6 +40,8 @@ if(CMAKE_CROSSCOMPILING)
   target_link_libraries(wasm ${opencv_core} ${opencv_3rdparty} fmt::fmt)
   target_link_options(wasm PRIVATE
     "SHELL:--embed-file yunet.onnx@/yunet.onnx"
+    "SHELL:--embed-file deploy.prototxt@/"
+    "SHELL:--embed-file res10_300x300_ssd_iter_140000_fp16.caffemodel@/"
     "SHELL:-s ALLOW_MEMORY_GROWTH=1"
     "SHELL:-s TOTAL_MEMORY=65536000"
     "SHELL:-s WASM=1"
@@ -56,6 +58,8 @@ if(CMAKE_CROSSCOMPILING)
   target_link_libraries(wasm_simd_threads ${opencv_core_simd_thread} ${opencv_3rdparty_simd_thread} fmt::fmt)
   target_link_options(wasm_simd_threads PRIVATE
     "SHELL:--embed-file yunet.onnx@/yunet.onnx"
+    "SHELL:--embed-file deploy.prototxt@/"
+    "SHELL:--embed-file res10_300x300_ssd_iter_140000_fp16.caffemodel@/"
     "SHELL:-s ALLOW_MEMORY_GROWTH=1"
     "SHELL:-s TOTAL_MEMORY=65536000"
     "SHELL:-s WASM=1"
@@ -76,6 +80,8 @@ add_executable(opencv_test opencv_test.cpp)
 target_link_libraries(opencv_test gtest_main)
 
 file(DOWNLOAD https://github.com/ShiqiYu/libfacedetection.train/raw/master/tasks/task1/onnx/yunet.onnx ${CMAKE_BINARY_DIR}/yunet.onnx)
+file(DOWNLOAD https://github.com/opencv/opencv/raw/master/samples/dnn/face_detector/deploy.prototxt ${CMAKE_BINARY_DIR}/deploy.prototxt)
+file(DOWNLOAD https://github.com/opencv/opencv_3rdparty/raw/19512576c112aa2c7b6328cb0e8d589a4a90a26d/res10_300x300_ssd_iter_140000_fp16.caffemodel ${CMAKE_BINARY_DIR}/res10_300x300_ssd_iter_140000_fp16.caffemodel)
 file(COPY "${CMAKE_SOURCE_DIR}/images/selfie.png" DESTINATION ${CMAKE_BINARY_DIR})
 
 if(CMAKE_CROSSCOMPILING)
@@ -87,7 +93,7 @@ if(CMAKE_CROSSCOMPILING)
   target_link_libraries(opencv_test ${opencv_core} ${opencv_3rdparty} fmt::fmt)
   target_link_options(opencv_test PRIVATE
     "SHELL:--embed-file ../images@/images"
-    "SHELL:--embed-file yunet.onnx@/yunet.onnx"
+    "SHELL:--embed-file yunet.onnx@/"
     "SHELL:-s ALLOW_MEMORY_GROWTH=1"
     "SHELL:-s TOTAL_MEMORY=65536000"
     "SHELL:-s USE_WEBNN=1"

@@ -4,8 +4,12 @@
 
 #ifdef EMSCRIPTEN
 const char *onnxPath = "/yunet.onnx";
+const char *prototxtPath = "/deploy.prototxt";
+const char *modelPath = "/res10_300x300_ssd_iter_140000_fp16.caffemodel";
 #else
 const char *onnxPath = "yunet.onnx";
+const char *prototxtPath = "deploy.prototxt";
+const char *modelPath = "res10_300x300_ssd_iter_140000_fp16.caffemodel";
 #endif
 
 namespace {
@@ -13,7 +17,7 @@ const int MAX_WIDTH = 1920;
 const int MAX_HEIGHT = 1080;
 int currentWidth = 0;
 int currentHeight = 0;
-cv::Ptr<cv::FaceDetectorYN> faceDetector;
+cv::dnn::dnn4_v20211220::Net faeceDetectorNet;
 uint8_t inputImageBuffer[MAX_WIDTH * MAX_HEIGHT * 4];
 uint8_t outputImageBuffer[MAX_WIDTH * MAX_HEIGHT * 4];
 } // namespace
@@ -34,9 +38,9 @@ intptr_t getOutputImageBuffer() {
 }
 
 int initialize() {
-  faceDetector =
-      cv::FaceDetectorYN::create(onnxPath, "", cv::Size(0, 0), 0.9, 0.3, 5000,
-                                 cv::dnn::Backend::DNN_BACKEND_WEBNN);
+  faeceDetectorNet = cv::dnn::readNetFromCaffe(prototxtPath, modelPath);
+  fmt::print("empty:{}\n", faeceDetectorNet.empty());
+  faeceDetectorNet.setPreferableBackend(6);
   currentWidth = 0;
   currentHeight = 0;
   return 0;
@@ -49,7 +53,6 @@ int detectFace(int width, int height) {
   // fmt::print("detectFace {}x{}\n", width, height);
   if (currentWidth != width || currentHeight != height) {
     fmt::print("setInputSize {}x{}\n", width, height);
-    faceDetector->setInputSize(cv::Size(width, height));
     currentWidth = width;
     currentHeight = height;
   }
@@ -57,23 +60,32 @@ int detectFace(int width, int height) {
   cv::Mat outputImageMat(height * 3 / 2, width, CV_8UC1, outputImageBuffer);
   cv::Mat bgrInputImageMat;
   cv::cvtColor(inputImageMat, bgrInputImageMat, cv::COLOR_YUV2BGR_I420);
+  cv::resize(bgrInputImageMat, bgrInputImageMat, cv::Size(300, 300));
+  auto blob = cv::dnn::blobFromImage(bgrInputImageMat, 1.0, cv::Size(300, 300),
+                                     cv::Scalar(104.0, 17.0, 123.0));
+  faeceDetectorNet.setInput(blob);
 
-  cv::Mat faces;
-  faceDetector->detect(bgrInputImageMat, faces);
-  // fmt::print("face: {}x{}@{} depth:{}\n", faces.cols, faces.rows,
-  //            faces.channels(), faces.depth());
-  for (int i = 0; i < faces.rows; ++i) {
-    // fmt::print("face[{}] {},{},{},{}\n", i, faces.at<float>(cv::Point(0, i)),
-    //            faces.at<float>(cv::Point(1, i)),
-    //            faces.at<float>(cv::Point(2, i)),
-    //            faces.at<float>(cv::Point(3, i)));
-    cv::rectangle(bgrInputImageMat,
-                  cv::Rect(faces.at<float>(cv::Point(0, i)),
-                           faces.at<float>(cv::Point(1, i)),
-                           faces.at<float>(cv::Point(2, i)),
-                           faces.at<float>(cv::Point(3, i))),
-                  cv::Scalar(255, 0, 0));
-  }
+  auto detections = faeceDetectorNet.forward();
+  fmt::print("detection size:{}x{}x{} dim:{}\n", detections.size().width,
+             detections.size().height, detections.channels(), detections.dims);
+
+  // cv::Mat faces;
+  // faceDetector->detect(bgrInputImageMat, faces);
+  // // fmt::print("face: {}x{}@{} depth:{}\n", faces.cols, faces.rows,
+  // //            faces.channels(), faces.depth());
+  // for (int i = 0; i < faces.rows; ++i) {
+  //   // fmt::print("face[{}] {},{},{},{}\n", i,
+  //   faces.at<float>(cv::Point(0, i)),
+  //   //            faces.at<float>(cv::Point(1, i)),
+  //   //            faces.at<float>(cv::Point(2, i)),
+  //   //            faces.at<float>(cv::Point(3, i)));
+  //   cv::rectangle(bgrInputImageMat,
+  //                 cv::Rect(faces.at<float>(cv::Point(0, i)),
+  //                          faces.at<float>(cv::Point(1, i)),
+  //                          faces.at<float>(cv::Point(2, i)),
+  //                          faces.at<float>(cv::Point(3, i))),
+  //                 cv::Scalar(255, 0, 0));
+  // }
 
   cv::cvtColor(bgrInputImageMat, outputImageMat, cv::COLOR_BGR2YUV_I420);
 
