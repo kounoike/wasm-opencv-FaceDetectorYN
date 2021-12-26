@@ -45,6 +45,7 @@ if(CMAKE_CROSSCOMPILING)
     "SHELL:-s WASM=1"
     "SHELL:-s MODULARIZE=1"
     "SHELL:-s USE_PTHREADS=0"
+    "SHELL:-s USE_WEBNN=1"
     "SHELL:-s EXPORT_NAME=createWasmModule"
     "SHELL:--bind"
   )
@@ -59,6 +60,7 @@ if(CMAKE_CROSSCOMPILING)
     "SHELL:-s TOTAL_MEMORY=65536000"
     "SHELL:-s WASM=1"
     "SHELL:-s MODULARIZE=1"
+    "SHELL:-s USE_WEBNN=1"
     "SHELL:-s USE_PTHREADS=1 -s PTHREAD_POOL_SIZE=16"
     "SHELL:-s EXPORT_NAME=createWasmSimdThreadsModule"
     "SHELL:--bind"
@@ -88,6 +90,7 @@ if(CMAKE_CROSSCOMPILING)
     "SHELL:--embed-file yunet.onnx@/yunet.onnx"
     "SHELL:-s ALLOW_MEMORY_GROWTH=1"
     "SHELL:-s TOTAL_MEMORY=65536000"
+    "SHELL:-s USE_WEBNN=1"
   )
 else()
   target_include_directories(opencv_test PUBLIC ${OpenCV_INCLUDE_DIRS})
@@ -111,6 +114,7 @@ if(CMAKE_CROSSCOMPILING)
     "SHELL:--embed-file yunet.onnx@/yunet.onnx"
     "SHELL:-s ALLOW_MEMORY_GROWTH=1"
     "SHELL:-s TOTAL_MEMORY=65536000"
+    "SHELL:-s USE_WEBNN=1"
   )
 
   add_executable(opencv_perf_simd opencv_perf.cpp)
@@ -124,6 +128,7 @@ if(CMAKE_CROSSCOMPILING)
     "SHELL:--embed-file yunet.onnx@/yunet.onnx"
     "SHELL:-s ALLOW_MEMORY_GROWTH=1"
     "SHELL:-s TOTAL_MEMORY=65536000"
+    "SHELL:-s USE_WEBNN=1"
   )
 
   add_executable(opencv_perf_simd_thread opencv_perf.cpp)
@@ -139,6 +144,7 @@ if(CMAKE_CROSSCOMPILING)
     # "SHELL:-s USE_PTHREADS=1 -s PTHREAD_POOL_SIZE=16 -s PROXY_TO_PTHREAD"
     "SHELL:-s USE_PTHREADS=1 -s PTHREAD_POOL_SIZE=navigator.hardwareConcurrency/2 -Wno-pthreads-mem-growth"
     "SHELL:-s TOTAL_MEMORY=65536000"
+    "SHELL:-s USE_WEBNN=1"
   )
 
 else()

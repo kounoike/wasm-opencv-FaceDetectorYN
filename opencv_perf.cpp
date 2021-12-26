@@ -1,5 +1,6 @@
 #include <benchmark/benchmark.h>
-#include <fmt/core.h>
+#include <fmt/format.h>
+#include <opencv2/dnn/dnn.hpp>
 #include <opencv2/opencv.hpp>
 
 #ifdef EMSCRIPTEN
@@ -23,7 +24,9 @@ void BM_FaceDetectYN(benchmark::State &state) {
     state.SkipWithError("Resize error");
   }
 
-  auto faceDetector = cv::FaceDetectorYN::create(onnxPath, "", cv::Size(0, 0));
+  auto faceDetector =
+      cv::FaceDetectorYN::create(onnxPath, "", cv::Size(0, 0), 0.9, 0.3, 5000,
+                                 cv::dnn::Backend::DNN_BACKEND_WEBNN);
   if (faceDetector.empty()) {
     state.SkipWithError("ONNX load error");
   }

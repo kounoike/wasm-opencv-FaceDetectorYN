@@ -48,13 +48,25 @@ const SegBbox: NextPage = () => {
         console.log('wasm js script load done.')
         resolve(script)
       }
-      // script.src = '/wasm/wasm.js'
-      script.src = '/wasm/wasm_simd_threads.js'
+      script.src = '/webnn-polyfill.js'
+      // script.src = '/wasm/wasm_simd_threads.js'
       document.body.appendChild(script)
     })
 
-    // return createWasmModule()
-    return createWasmSimdThreadsModule()
+    await new Promise(resolve => {
+      console.log('creating script dom node')
+      const script = document.createElement('script')
+      script.onload = () => {
+        console.log('wasm js script load done.')
+        resolve(script)
+      }
+      script.src = '/wasm/wasm.js'
+      // script.src = '/wasm/wasm_simd_threads.js'
+      document.body.appendChild(script)
+    })
+
+    return createWasmModule()
+    // return createWasmSimdThreadsModule()
   })
 
   const handleSelectVideoDevice = (selectedId: string) => {

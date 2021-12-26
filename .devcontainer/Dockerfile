@@ -52,15 +52,18 @@ RUN curl -sSL https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key ad
   google-chrome-beta \
   google-chrome-unstable
 
-ARG EMSCRIPTEN_VERSION=3.0.1
+# ARG EMSCRIPTEN_VERSION=2.0.15
+ARG EMSCRIPTEN_VERSION=2.0.26
 # ### EMSCRIPTEN for base
 WORKDIR /
-RUN git clone https://github.com/emscripten-core/emsdk.git --depth 1
+RUN git clone https://github.com/emscripten-core/emsdk.git -b ${EMSCRIPTEN_VERSION} --depth 1
 WORKDIR /emsdk
 RUN ./emsdk install ${EMSCRIPTEN_VERSION} && ./emsdk activate ${EMSCRIPTEN_VERSION}
+WORKDIR /emsdk/upstream
+RUN rm -rf emscripten && git clone https://github.com/huningxin/emscripten.git -b webnn_${EMSCRIPTEN_VERSION} --depth 1 && cd emscripten && npm ci
 RUN echo '. /emsdk/emsdk_env.sh > /dev/null 2>&1' >> /home/vscode/.bashrc
 
-ARG OPENCV_VERSION=4.5.4
+ARG OPENCV_VERSION=4.5.5
 WORKDIR /
 RUN git clone https://github.com/opencv/opencv.git -b ${OPENCV_VERSION} --depth 1
 RUN git -C /opencv checkout -b ${OPENCV_VERSION}
@@ -69,9 +72,9 @@ RUN git -C /opencv checkout -b ${OPENCV_VERSION}
 RUN git clone https://github.com/opencv/opencv_contrib.git -b ${OPENCV_VERSION} --depth 1
 RUN git -C /opencv_contrib checkout ${OPENCV_VERSION}
 
-ENV OPENCV_CMAKE_FLAGS="\
+ARG OPENCV_CMAKE_FLAGS="\
   -DOPENCV_EXTRA_MODULES_PATH=/opencv_contrib/modules \
-  -DBUILD_LIST=core,imgproc,calib3d,video,ximgproc,imgcodecs,dnn,objdetect \
+  -DBUILD_LIST=core,imgproc,calib3d,video,ximgproc,imgcodecs,dnn,objdetect,ml \
   -DBUILD_opencv_imgcodecs=ON \
   -DBUILD_opencv_js=OFF \
   -DBUILD_TESTS=OFF \
@@ -88,28 +91,27 @@ ENV OPENCV_CMAKE_FLAGS="\
   -DCMAKE_BUILD_TYPE=Release \
   "
 
-ENV OPENCV_CONFIG_FLAG_EMSCRIPTEN="\
+ARG OPENCV_CONFIG_FLAG_EMSCRIPTEN="\
+  --webnn \
   --config_only \
   --emscripten_dir=/emsdk/upstream/emscripten \
   "
 
-ENV EMSDK=/emsdk
-
 WORKDIR /opencv
-RUN python3  platforms/js/build_js.py build_wasm                               ${OPENCV_CONFIG_FLAG_EMSCRIPTEN} $(sh -c 'for x in "$@"; do echo "--cmake_option=$x"; done' "" ${OPENCV_CMAKE_FLAGS})
-RUN python3  platforms/js/build_js.py build_wasm_simd --simd                   $OPENCV_CONFIG_FLAG_EMSCRIPTEN $(sh -c 'for x in "$@"; do echo "--cmake_option=$x"; done' "" ${OPENCV_CMAKE_FLAGS})
-RUN python3  platforms/js/build_js.py build_wasm_threads --threads             $OPENCV_CONFIG_FLAG_EMSCRIPTEN $(sh -c 'for x in "$@"; do echo "--cmake_option=$x"; done' "" ${OPENCV_CMAKE_FLAGS})
-RUN python3  platforms/js/build_js.py build_wasm_simd_threads --simd --threads $OPENCV_CONFIG_FLAG_EMSCRIPTEN $(sh -c 'for x in "$@"; do echo "--cmake_option=$x"; done' "" ${OPENCV_CMAKE_FLAGS})
+RUN python3 platforms/js/build_js.py build_wasm                               ${OPENCV_CONFIG_FLAG_EMSCRIPTEN} $(sh -c 'for x in "$@"; do echo "--cmake_option=$x"; done' "" ${OPENCV_CMAKE_FLAGS})
+RUN python3 platforms/js/build_js.py build_wasm_simd --simd                   ${OPENCV_CONFIG_FLAG_EMSCRIPTEN} $(sh -c 'for x in "$@"; do echo "--cmake_option=$x"; done' "" ${OPENCV_CMAKE_FLAGS})
+RUN python3 platforms/js/build_js.py build_wasm_threads --threads             ${OPENCV_CONFIG_FLAG_EMSCRIPTEN} $(sh -c 'for x in "$@"; do echo "--cmake_option=$x"; done' "" ${OPENCV_CMAKE_FLAGS})
+RUN python3 platforms/js/build_js.py build_wasm_simd_threads --simd --threads ${OPENCV_CONFIG_FLAG_EMSCRIPTEN} $(sh -c 'for x in "$@"; do echo "--cmake_option=$x"; done' "" ${OPENCV_CMAKE_FLAGS})
 
 RUN cmake --build /opencv/build_wasm              --parallel $(nproc)
 RUN cmake --build /opencv/build_wasm_simd         --parallel $(nproc)
 RUN cmake --build /opencv/build_wasm_threads      --parallel $(nproc)
 RUN cmake --build /opencv/build_wasm_simd_threads --parallel $(nproc)
 
-RUN cmake --install /opencv/build_wasm
-RUN cmake --install /opencv/build_wasm_simd
-RUN cmake --install /opencv/build_wasm_threads
-RUN cmake --install /opencv/build_wasm_simd_threads
+RUN mkdir /opencv/build_wasm/install && cmake --install /opencv/build_wasm --prefix /opencv/build_wasm/install
+RUN mkdir /opencv/build_wasm_simd/install && cmake --install /opencv/build_wasm_simd --prefix /opencv/build_wasm_simd/install
+RUN mkdir /opencv/build_wasm_threads/install && cmake --install /opencv/build_wasm_threads --prefix /opencv/build_wasm_threads/install
+RUN mkdir /opencv/build_wasm_simd_threads/install && cmake --install /opencv/build_wasm_simd_threads --prefix /opencv/build_wasm_simd_threads/install
 
 ## build for host
 WORKDIR /opencv/build_native

@@ -18,6 +18,8 @@ uint8_t inputImageBuffer[MAX_WIDTH * MAX_HEIGHT * 4];
 uint8_t outputImageBuffer[MAX_WIDTH * MAX_HEIGHT * 4];
 } // namespace
 
+std::string getBuildInfo() { return cv::getBuildInformation(); }
+
 std::string getExceptionMsg(intptr_t ptr) {
   auto e = reinterpret_cast<std::exception *>(ptr);
   return std::string(e->what());
@@ -32,7 +34,9 @@ intptr_t getOutputImageBuffer() {
 }
 
 int initialize() {
-  faceDetector = cv::FaceDetectorYN::create(onnxPath, "", cv::Size(0, 0));
+  faceDetector =
+      cv::FaceDetectorYN::create(onnxPath, "", cv::Size(0, 0), 0.9, 0.3, 5000,
+                                 cv::dnn::Backend::DNN_BACKEND_WEBNN);
   currentWidth = 0;
   currentHeight = 0;
   return 0;
@@ -77,6 +81,7 @@ int detectFace(int width, int height) {
 }
 
 EMSCRIPTEN_BINDINGS(wasm_module) {
+  emscripten::function("getBuildInfo", &getBuildInfo);
   emscripten::function("getExceptionMsg", &getExceptionMsg,
                        emscripten::allow_raw_pointers());
   emscripten::function("getInputImageBuffer", &getInputImageBuffer,

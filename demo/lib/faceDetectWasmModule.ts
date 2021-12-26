@@ -1,5 +1,6 @@
 export interface WasmModule extends EmscriptenModule {
   getExceptionMsg(ex: number): string
+  getBuildInfo(): string
   initialize(): number
   getInputImageBuffer(): number
   getOutputImageBuffer(): number

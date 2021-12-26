@@ -13,7 +13,16 @@ export function getFaceDetectTransformer (
   controller: TransformStreamDefaultController<VideoFrame>
 ) => void {
   console.log(faceDetectModule)
-  faceDetectModule.initialize()
+  console.log(faceDetectModule.getBuildInfo())
+  try{
+    faceDetectModule.initialize()
+  } catch(ex) {
+    if (typeof ex === 'number') {
+      console.log(faceDetectModule.getExceptionMsg(ex as number))
+    } else {
+      console.log(ex)
+    }
+  }
   const inputImageOffset = faceDetectModule.getInputImageBuffer()
   const outputImageOffset = faceDetectModule.getOutputImageBuffer()
 
