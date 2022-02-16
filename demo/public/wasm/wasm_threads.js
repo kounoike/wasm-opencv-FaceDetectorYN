@@ -1197,7 +1197,7 @@ var TOTAL_STACK = 5242880;
 
 if (Module["TOTAL_STACK"]) assert(TOTAL_STACK === Module["TOTAL_STACK"], "the stack size can no longer be determined at runtime");
 
-var INITIAL_MEMORY = Module["INITIAL_MEMORY"] || 65536e3;
+var INITIAL_MEMORY = Module["INITIAL_MEMORY"] || 33554432;
 
 if (!Object.getOwnPropertyDescriptor(Module, "INITIAL_MEMORY")) {
  Object.defineProperty(Module, "INITIAL_MEMORY", {

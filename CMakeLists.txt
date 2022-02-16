@@ -59,7 +59,7 @@ if(CMAKE_CROSSCOMPILING)
     "-Wno-pthreads-mem-growth"
     "SHELL:--embed-file yunet.onnx@/yunet.onnx"
     "SHELL:-s ALLOW_MEMORY_GROWTH=1"
-    "SHELL:-s TOTAL_MEMORY=65536000"
+    "SHELL:-s TOTAL_MEMORY=33554432"
     "SHELL:-s WASM=1"
     "SHELL:-s ENVIRONMENT=web,worker"
     "SHELL:-s MODULARIZE=1"
