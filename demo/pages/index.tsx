@@ -54,7 +54,9 @@ const SegBbox: NextPage = () => {
     })
 
     // return createWasmModule()
-    return createWasmThreadsModule()
+    const mod = createWasmThreadsModule()
+    console.log('module created', mod)
+    return mod
   })
 
   const handleSelectVideoDevice = (selectedId: string) => {
