@@ -52,7 +52,7 @@ RUN curl -sSL https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key ad
   google-chrome-beta \
   google-chrome-unstable
 
-ARG EMSCRIPTEN_VERSION=3.0.1
+ARG EMSCRIPTEN_VERSION=3.1.4
 # ### EMSCRIPTEN for base
 WORKDIR /
 RUN git clone https://github.com/emscripten-core/emsdk.git --depth 1
@@ -60,7 +60,7 @@ WORKDIR /emsdk
 RUN ./emsdk install ${EMSCRIPTEN_VERSION} && ./emsdk activate ${EMSCRIPTEN_VERSION}
 RUN echo '. /emsdk/emsdk_env.sh > /dev/null 2>&1' >> /home/vscode/.bashrc
 
-ARG OPENCV_VERSION=4.5.4
+ARG OPENCV_VERSION=4.5.5
 WORKDIR /
 RUN git clone https://github.com/opencv/opencv.git -b ${OPENCV_VERSION} --depth 1
 RUN git -C /opencv checkout -b ${OPENCV_VERSION}
@@ -106,10 +106,10 @@ RUN cmake --build /opencv/build_wasm_simd         --parallel $(nproc)
 RUN cmake --build /opencv/build_wasm_threads      --parallel $(nproc)
 RUN cmake --build /opencv/build_wasm_simd_threads --parallel $(nproc)
 
-RUN cmake --install /opencv/build_wasm
-RUN cmake --install /opencv/build_wasm_simd
-RUN cmake --install /opencv/build_wasm_threads
-RUN cmake --install /opencv/build_wasm_simd_threads
+RUN cmake --install /opencv/build_wasm --prefix /opencv/build_wasm/install
+RUN cmake --install /opencv/build_wasm_simd --prefix /opencv/build_wasm_simd/install
+RUN cmake --install /opencv/build_wasm_threads --prefix /opencv/build_wasm_threads/install
+RUN cmake --install /opencv/build_wasm_simd_threads --prefix /opencv/build_wasm_simd_threads/install
 
 ## build for host
 WORKDIR /opencv/build_native
