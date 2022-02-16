@@ -15,8 +15,8 @@ import Sora, { ConnectionOptions, ConnectionPublisher } from 'sora-js-sdk'
 // import '../../lib/wasm/segmentation_simd_thread.worker'
 // import '../../lib/wasm/segmentation_simd_thread.wasm'
 
-declare function createWasmModule (): Promise<WasmModule>
-declare function createWasmSimdThreadsModule (): Promise<WasmModule>
+// declare function createWasmModule (): Promise<WasmModule>
+declare function createWasmThreadsModule (): Promise<WasmModule>
 
 const SegBbox: NextPage = () => {
   const [videoDeviceId, setVideoDeviceId] = useLocalStorage('videoDeviceId', '')
@@ -49,12 +49,12 @@ const SegBbox: NextPage = () => {
         resolve(script)
       }
       // script.src = '/wasm/wasm.js'
-      script.src = '/wasm/wasm_simd_threads.js'
+      script.src = '/wasm/wasm_threads.js'
       document.body.appendChild(script)
     })
 
     // return createWasmModule()
-    return createWasmSimdThreadsModule()
+    return createWasmThreadsModule()
   })
 
   const handleSelectVideoDevice = (selectedId: string) => {

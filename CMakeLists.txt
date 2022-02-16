@@ -10,6 +10,8 @@ if(CMAKE_CROSSCOMPILING)
   file(GLOB opencv_3rdparty_simd "/opencv/build_wasm_simd/install/lib/opencv4/3rdparty/*.a")
   file(GLOB opencv_core_simd_thread "/opencv/build_wasm_simd_threads/install/lib/*.a")
   file(GLOB opencv_3rdparty_simd_thread "/opencv/build_wasm_simd_threads/install/lib/opencv4/3rdparty/*.a")
+  file(GLOB opencv_core_thread "/opencv/build_wasm_threads/install/lib/*.a")
+  file(GLOB opencv_3rdparty_thread "/opencv/build_wasm_threads/install/lib/opencv4/3rdparty/*.a")
 else()
   find_package(OpenCV REQUIRED)
 endif()
@@ -46,6 +48,21 @@ if(CMAKE_CROSSCOMPILING)
     "SHELL:-s MODULARIZE=1"
     "SHELL:-s USE_PTHREADS=0"
     "SHELL:-s EXPORT_NAME=createWasmModule"
+    "SHELL:--bind"
+  )
+
+  add_executable(wasm_threads opencv_wasm.cpp)
+  target_compile_options(wasm_threads PUBLIC "-matomics" "-mbulk-memory")
+  target_include_directories(wasm_threads PRIVATE "/opencv/build_wasm_threads/install/include/opencv4")
+  target_link_libraries(wasm_threads ${opencv_core_thread} ${opencv_3rdparty_thread} fmt::fmt)
+  target_link_options(wasm_threads PRIVATE
+    "SHELL:--embed-file yunet.onnx@/yunet.onnx"
+    "SHELL:-s ALLOW_MEMORY_GROWTH=1"
+    "SHELL:-s TOTAL_MEMORY=65536000"
+    "SHELL:-s WASM=1"
+    "SHELL:-s MODULARIZE=1"
+    "SHELL:-s USE_PTHREADS=1 -s PTHREAD_POOL_SIZE=16"
+    "SHELL:-s EXPORT_NAME=createWasmThreadsModule"
     "SHELL:--bind"
   )
 
