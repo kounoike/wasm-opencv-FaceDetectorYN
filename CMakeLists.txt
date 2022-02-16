@@ -56,14 +56,19 @@ if(CMAKE_CROSSCOMPILING)
   target_include_directories(wasm_threads PRIVATE "/opencv/build_wasm_threads/install/include/opencv4")
   target_link_libraries(wasm_threads ${opencv_core_thread} ${opencv_3rdparty_thread} fmt::fmt)
   target_link_options(wasm_threads PRIVATE
+    "-Wno-pthreads-mem-growth"
     "SHELL:--embed-file yunet.onnx@/yunet.onnx"
     "SHELL:-s ALLOW_MEMORY_GROWTH=1"
     "SHELL:-s TOTAL_MEMORY=65536000"
     "SHELL:-s WASM=1"
+    "SHELL:-s ENVIRONMENT=web,worker"
     "SHELL:-s MODULARIZE=1"
     "SHELL:-s USE_PTHREADS=1 -s PTHREAD_POOL_SIZE=16"
     "SHELL:-s EXPORT_NAME=createWasmThreadsModule"
     "SHELL:--bind"
+    "SHELL:-s ASSERTIONS=2"
+    "SHELL:-s EXCEPTION_DEBUG=1"
+    "SHELL:-s DEMANGLE_SUPPORT=1"
   )
 
   add_executable(wasm_simd_threads opencv_wasm.cpp)
@@ -71,11 +76,13 @@ if(CMAKE_CROSSCOMPILING)
   target_include_directories(wasm_simd_threads PRIVATE "/opencv/build_wasm_simd_threads/install/include/opencv4")
   target_link_libraries(wasm_simd_threads ${opencv_core_simd_thread} ${opencv_3rdparty_simd_thread} fmt::fmt)
   target_link_options(wasm_simd_threads PRIVATE
+    "-Wno-pthreads-mem-growth"
     "SHELL:--embed-file yunet.onnx@/yunet.onnx"
     "SHELL:-s ALLOW_MEMORY_GROWTH=1"
     "SHELL:-s TOTAL_MEMORY=65536000"
     "SHELL:-s WASM=1"
     "SHELL:-s MODULARIZE=1"
+    "SHELL:-s ENVIRONMENT=web,worker"
     "SHELL:-s USE_PTHREADS=1 -s PTHREAD_POOL_SIZE=16"
     "SHELL:-s EXPORT_NAME=createWasmSimdThreadsModule"
     "SHELL:--bind"

@@ -1,7 +1,7 @@
 
 var createWasmThreadsModule = (() => {
   var _scriptDir = typeof document !== 'undefined' && document.currentScript ? document.currentScript.src : undefined;
-  if (typeof __filename !== 'undefined') _scriptDir = _scriptDir || __filename;
+  
   return (
 function(createWasmThreadsModule) {
   createWasmThreadsModule = createWasmThreadsModule || {};
@@ -248,6 +248,21 @@ if (!Object.getOwnPropertyDescriptor(Module["ready"], "___stdio_exit")) {
  });
 }
 
+if (!Object.getOwnPropertyDescriptor(Module["ready"], "___set_stack_limits")) {
+ Object.defineProperty(Module["ready"], "___set_stack_limits", {
+  configurable: true,
+  get: function() {
+   abort("You are getting ___set_stack_limits on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js");
+  }
+ });
+ Object.defineProperty(Module["ready"], "___set_stack_limits", {
+  configurable: true,
+  set: function() {
+   abort("You are setting ___set_stack_limits on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js");
+  }
+ });
+}
+
 if (!Object.getOwnPropertyDescriptor(Module["ready"], "onRuntimeInitialized")) {
  Object.defineProperty(Module["ready"], "onRuntimeInitialized", {
   configurable: true,
@@ -351,77 +366,7 @@ function logExceptionOnExit(e) {
  err("exiting due to exception: " + toLog);
 }
 
-var fs;
-
-var nodePath;
-
-var requireNodeFS;
-
-if (ENVIRONMENT_IS_NODE) {
- if (!(typeof process === "object" && typeof require === "function")) throw new Error("not compiled for this environment (did you build to HTML and try to run it not on the web, or set ENVIRONMENT to something - like node - and run it someplace else - like on the web?)");
- if (ENVIRONMENT_IS_WORKER) {
-  scriptDirectory = require("path").dirname(scriptDirectory) + "/";
- } else {
-  scriptDirectory = __dirname + "/";
- }
- requireNodeFS = (() => {
-  if (!nodePath) {
-   fs = require("fs");
-   nodePath = require("path");
-  }
- });
- read_ = function shell_read(filename, binary) {
-  requireNodeFS();
-  filename = nodePath["normalize"](filename);
-  return fs.readFileSync(filename, binary ? undefined : "utf8");
- };
- readBinary = (filename => {
-  var ret = read_(filename, true);
-  if (!ret.buffer) {
-   ret = new Uint8Array(ret);
-  }
-  assert(ret.buffer);
-  return ret;
- });
- readAsync = ((filename, onload, onerror) => {
-  requireNodeFS();
-  filename = nodePath["normalize"](filename);
-  fs.readFile(filename, function(err, data) {
-   if (err) onerror(err); else onload(data.buffer);
-  });
- });
- if (process["argv"].length > 1) {
-  thisProgram = process["argv"][1].replace(/\\/g, "/");
- }
- arguments_ = process["argv"].slice(2);
- process["on"]("uncaughtException", function(ex) {
-  if (!(ex instanceof ExitStatus)) {
-   throw ex;
-  }
- });
- process["on"]("unhandledRejection", function(reason) {
-  throw reason;
- });
- quit_ = ((status, toThrow) => {
-  if (keepRuntimeAlive()) {
-   process["exitCode"] = status;
-   throw toThrow;
-  }
-  logExceptionOnExit(toThrow);
-  process["exit"](status);
- });
- Module["inspect"] = function() {
-  return "[Emscripten Module object]";
- };
- let nodeWorkerThreads;
- try {
-  nodeWorkerThreads = require("worker_threads");
- } catch (e) {
-  console.error('The "worker_threads" module is not supported in this node.js build - perhaps a newer version is needed?');
-  throw e;
- }
- global.Worker = nodeWorkerThreads.Worker;
-} else if (ENVIRONMENT_IS_SHELL) {
+if (ENVIRONMENT_IS_SHELL) {
  if (typeof process === "object" && typeof require === "function" || typeof window === "object" || typeof importScripts === "function") throw new Error("not compiled for this environment (did you build to HTML and try to run it not on the web, or set ENVIRONMENT to something - like node - and run it someplace else - like on the web?)");
  if (typeof read != "undefined") {
   read_ = function shell_read(f) {
@@ -471,7 +416,7 @@ if (ENVIRONMENT_IS_NODE) {
   scriptDirectory = "";
  }
  if (!(typeof window === "object" || typeof importScripts === "function")) throw new Error("not compiled for this environment (did you build to HTML and try to run it not on the web, or set ENVIRONMENT to something - like node - and run it someplace else - like on the web?)");
- if (!ENVIRONMENT_IS_NODE) {
+ {
   read_ = (url => {
    var xhr = new XMLHttpRequest();
    xhr.open("GET", url, false);
@@ -507,25 +452,9 @@ if (ENVIRONMENT_IS_NODE) {
  throw new Error("environment detection error");
 }
 
-if (ENVIRONMENT_IS_NODE) {
- if (typeof performance === "undefined") {
-  global.performance = require("perf_hooks").performance;
- }
-}
+var out = Module["print"] || console.log.bind(console);
 
-var defaultPrint = console.log.bind(console);
-
-var defaultPrintErr = console.warn.bind(console);
-
-if (ENVIRONMENT_IS_NODE) {
- requireNodeFS();
- defaultPrint = (str => fs.writeSync(1, str + "\n"));
- defaultPrintErr = (str => fs.writeSync(2, str + "\n"));
-}
-
-var out = Module["print"] || defaultPrint;
-
-var err = Module["printErr"] || defaultPrintErr;
+var err = Module["printErr"] || console.warn.bind(console);
 
 Object.assign(Module, moduleOverrides);
 
@@ -627,6 +556,8 @@ var WORKERFS = "WORKERFS is no longer included by default; build with -lworkerfs
 var NODEFS = "NODEFS is no longer included by default; build with -lnodefs.js";
 
 assert(ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER || ENVIRONMENT_IS_NODE, "Pthreads do not work in this environment yet (need Web Workers, or an alternative to them)");
+
+assert(!ENVIRONMENT_IS_NODE, "node environment detected but not enabled at build time.  Add 'node' to `-s ENVIRONMENT` to enable.");
 
 assert(!ENVIRONMENT_IS_SHELL, "shell environment detected but not enabled at build time.  Add 'shell' to `-s ENVIRONMENT` to enable.");
 
@@ -761,6 +692,9 @@ function addFunction(func, sig) {
  }
  if (functionsInTableMap.has(func)) {
   return functionsInTableMap.get(func);
+ }
+ for (var i = 0; i < wasmTable.length; i++) {
+  assert(getWasmTableEntry(i) != func, "function in Table but not functionsInTableMap");
  }
  var ret = getEmptyTableSlot();
  try {
@@ -1372,6 +1306,7 @@ function initRuntime() {
  assert(!runtimeInitialized);
  runtimeInitialized = true;
  if (ENVIRONMENT_IS_PTHREAD) return;
+ ___set_stack_limits(_emscripten_stack_get_base(), _emscripten_stack_get_end());
  if (!Module["noFSInit"] && !FS.init.initialized) FS.init();
  FS.ignorePermissions = false;
  TTY.init();
@@ -1567,7 +1502,7 @@ function getBinary(file) {
 
 function getBinaryPromise() {
  if (!wasmBinary && (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER)) {
-  if (typeof fetch === "function" && !isFileURI(wasmBinaryFile)) {
+  if (typeof fetch === "function") {
    return fetch(wasmBinaryFile, {
     credentials: "same-origin"
    }).then(function(response) {
@@ -1578,14 +1513,6 @@ function getBinaryPromise() {
    }).catch(function() {
     return getBinary(wasmBinaryFile);
    });
-  } else {
-   if (readAsync) {
-    return new Promise(function(resolve, reject) {
-     readAsync(wasmBinaryFile, function(response) {
-      resolve(new Uint8Array(response));
-     }, reject);
-    });
-   }
   }
  }
  return Promise.resolve().then(function() {
@@ -1638,7 +1565,7 @@ function createWasm() {
   });
  }
  function instantiateAsync() {
-  if (!wasmBinary && typeof WebAssembly.instantiateStreaming === "function" && !isDataURI(wasmBinaryFile) && !isFileURI(wasmBinaryFile) && typeof fetch === "function") {
+  if (!wasmBinary && typeof WebAssembly.instantiateStreaming === "function" && !isDataURI(wasmBinaryFile) && typeof fetch === "function") {
    return fetch(wasmBinaryFile, {
     credentials: "same-origin"
    }).then(function(response) {
@@ -1700,8 +1627,28 @@ function withStackSave(f) {
 }
 
 function demangle(func) {
- warnOnce("warning: build with  -s DEMANGLE_SUPPORT=1  to link in libcxxabi demangling");
- return func;
+ demangle.recursionGuard = (demangle.recursionGuard | 0) + 1;
+ if (demangle.recursionGuard > 1) return func;
+ var __cxa_demangle_func = Module["___cxa_demangle"] || Module["__cxa_demangle"];
+ assert(__cxa_demangle_func);
+ return withStackSave(function() {
+  try {
+   var s = func;
+   if (s.startsWith("__Z")) s = s.substr(1);
+   var len = lengthBytesUTF8(s) + 1;
+   var buf = stackAlloc(len);
+   stringToUTF8(s, buf, len);
+   var status = stackAlloc(4);
+   var ret = __cxa_demangle_func(buf, 0, 0, status);
+   if (GROWABLE_HEAP_I32()[status >> 2] === 0 && ret) {
+    return UTF8ToString(ret);
+   }
+  } catch (e) {} finally {
+   _free(ret);
+   if (demangle.recursionGuard < 2) --demangle.recursionGuard;
+  }
+  return func;
+ });
 }
 
 function demangleAll(text) {
@@ -1889,17 +1836,6 @@ var PThread = {
    err(message + " " + e.filename + ":" + e.lineno + ": " + e.message);
    throw e;
   });
-  if (ENVIRONMENT_IS_NODE) {
-   worker.on("message", function(data) {
-    worker.onmessage({
-     data: data
-    });
-   });
-   worker.on("error", function(e) {
-    worker.onerror(e);
-   });
-   worker.on("detachedExit", function() {});
-  }
   assert(wasmMemory instanceof WebAssembly.Memory, "WebAssembly memory should have been loaded by now!");
   assert(wasmModule instanceof WebAssembly.Module, "WebAssembly Module should have been loaded by now!");
   worker.postMessage({
@@ -1932,6 +1868,7 @@ function establishStackSpace() {
  assert(stackMax != 0);
  assert(stackTop > stackMax);
  _emscripten_stack_set_limits(stackTop, stackMax);
+ ___set_stack_limits(stackTop, stackMax);
  stackRestore(stackTop);
  writeStackCookie();
 }
@@ -2001,12 +1938,7 @@ function ___assert_fail(condition, filename, line, func) {
 
 var _emscripten_get_now;
 
-if (ENVIRONMENT_IS_NODE) {
- _emscripten_get_now = (() => {
-  var t = process["hrtime"]();
-  return t[0] * 1e3 + t[1] / 1e6;
- });
-} else if (ENVIRONMENT_IS_PTHREAD) {
+if (ENVIRONMENT_IS_PTHREAD) {
  _emscripten_get_now = (() => performance.now() - Module["__performance_now_clock_drift"]);
 } else _emscripten_get_now = (() => performance.now());
 
@@ -2094,6 +2026,7 @@ var exceptionLast = 0;
 var uncaughtExceptionCount = 0;
 
 function ___cxa_throw(ptr, type, destructor) {
+ err("Compiled code throwing an exception, " + [ ptr, type, destructor ]);
  var info = new ExceptionInfo(ptr);
  info.init(type, destructor);
  exceptionLast = ptr;
@@ -2112,6 +2045,11 @@ function ___emscripten_thread_cleanup(thread) {
   "cmd": "cleanupThread",
   "thread": thread
  });
+}
+
+function ___handle_stack_overflow(requested) {
+ requested = requested >>> 0;
+ abort("stack overflow (Attempt to set SP to 0x" + requested.toString(16) + ", with stack limits [0x" + _emscripten_stack_get_end().toString(16) + " - 0x" + _emscripten_stack_get_base().toString(16) + "])");
 }
 
 function spawnThread(threadParams) {
@@ -2246,15 +2184,7 @@ function getRandomDevice() {
    crypto.getRandomValues(randomBuffer);
    return randomBuffer[0];
   };
- } else if (ENVIRONMENT_IS_NODE) {
-  try {
-   var crypto_module = require("crypto");
-   return function() {
-    return crypto_module["randomBytes"](1)[0];
-   };
-  } catch (e) {}
- }
- return function() {
+ } else return function() {
   abort("no cryptographic support found for randomDevice. consider polyfilling it if you want to use something insecure like Math.random(), e.g. put this in a --pre-js: var crypto = { getRandomValues: function(array) { for (var i = 0; i < array.length; i++) array[i] = (Math.random()*256)|0 } };");
  };
 }
@@ -2383,21 +2313,7 @@ var TTY = {
   get_char: function(tty) {
    if (!tty.input.length) {
     var result = null;
-    if (ENVIRONMENT_IS_NODE) {
-     var BUFSIZE = 256;
-     var buf = Buffer.alloc(BUFSIZE);
-     var bytesRead = 0;
-     try {
-      bytesRead = fs.readSync(process.stdin.fd, buf, 0, BUFSIZE, -1);
-     } catch (e) {
-      if (e.toString().includes("EOF")) bytesRead = 0; else throw e;
-     }
-     if (bytesRead > 0) {
-      result = buf.slice(0, bytesRead).toString("utf-8");
-     } else {
-      result = null;
-     }
-    } else if (typeof window != "undefined" && typeof window.prompt == "function") {
+    if (typeof window != "undefined" && typeof window.prompt == "function") {
      result = window.prompt("Input: ");
      if (result !== null) {
       result += "\n";
@@ -5641,7 +5557,6 @@ function _abort() {
 }
 
 function _emscripten_check_blocking_allowed() {
- if (ENVIRONMENT_IS_NODE) return;
  if (ENVIRONMENT_IS_WORKER) return;
  warnOnce("Blocking on the main thread is very dangerous, see https://emscripten.org/docs/porting/pthreads.html#blocking-on-the-main-browser-thread");
 }
@@ -5655,7 +5570,6 @@ function _emscripten_memcpy_big(dest, src, num) {
 }
 
 function _emscripten_num_logical_cores() {
- if (ENVIRONMENT_IS_NODE) return require("os").cpus().length;
  return navigator["hardwareConcurrency"];
 }
 
@@ -5714,7 +5628,10 @@ function _emscripten_resize_heap(requestedSize) {
   var overGrownHeapSize = oldSize * (1 + .2 / cutDown);
   overGrownHeapSize = Math.min(overGrownHeapSize, requestedSize + 100663296);
   var newSize = Math.min(maxHeapSize, alignUp(Math.max(requestedSize, overGrownHeapSize), 65536));
+  var t0 = _emscripten_get_now();
   var replacement = emscripten_realloc_buffer(newSize);
+  var t1 = _emscripten_get_now();
+  out("Heap resize call from " + oldSize + " to " + newSize + " took " + (t1 - t0) + " msecs. Success: " + !!replacement);
   if (replacement) {
    return true;
   }
@@ -6799,10 +6716,6 @@ var decodeBase64 = typeof atob === "function" ? atob : function(input) {
 };
 
 function intArrayFromBase64(s) {
- if (typeof ENVIRONMENT_IS_NODE === "boolean" && ENVIRONMENT_IS_NODE) {
-  var buf = Buffer.from(s, "base64");
-  return new Uint8Array(buf["buffer"], buf["byteOffset"], buf["byteLength"]);
- }
  try {
   var decoded = decodeBase64(s);
   var bytes = new Uint8Array(decoded.length);
@@ -6829,6 +6742,7 @@ var asmLibraryArg = {
  "__cxa_throw": ___cxa_throw,
  "__emscripten_init_main_thread_js": ___emscripten_init_main_thread_js,
  "__emscripten_thread_cleanup": ___emscripten_thread_cleanup,
+ "__handle_stack_overflow": ___handle_stack_overflow,
  "__pthread_create_js": ___pthread_create_js,
  "__syscall_fcntl64": ___syscall_fcntl64,
  "__syscall_ioctl": ___syscall_ioctl,
@@ -6943,6 +6857,10 @@ var stackRestore = Module["stackRestore"] = createExportWrapper("stackRestore");
 
 var stackAlloc = Module["stackAlloc"] = createExportWrapper("stackAlloc");
 
+var ___cxa_demangle = Module["___cxa_demangle"] = createExportWrapper("__cxa_demangle");
+
+var ___set_stack_limits = Module["___set_stack_limits"] = createExportWrapper("__set_stack_limits");
+
 var dynCall_ji = Module["dynCall_ji"] = createExportWrapper("dynCall_ji");
 
 var dynCall_jiii = Module["dynCall_jiii"] = createExportWrapper("dynCall_jiii");
@@ -6961,9 +6879,9 @@ var dynCall_iiiiijj = Module["dynCall_iiiiijj"] = createExportWrapper("dynCall_i
 
 var dynCall_iiiiiijj = Module["dynCall_iiiiiijj"] = createExportWrapper("dynCall_iiiiiijj");
 
-var ___emscripten_embedded_file_data = Module["___emscripten_embedded_file_data"] = 685232;
+var ___emscripten_embedded_file_data = Module["___emscripten_embedded_file_data"] = 687168;
 
-var __emscripten_allow_main_runtime_queued_calls = Module["__emscripten_allow_main_runtime_queued_calls"] = 722524;
+var __emscripten_allow_main_runtime_queued_calls = Module["__emscripten_allow_main_runtime_queued_calls"] = 732892;
 
 if (!Object.getOwnPropertyDescriptor(Module, "intArrayFromString")) Module["intArrayFromString"] = (() => abort("'intArrayFromString' was not exported. add it to EXPORTED_RUNTIME_METHODS (see the FAQ)"));
 
